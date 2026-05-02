@@ -1,0 +1,245 @@
+Command: D:\Espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe D:\Espressif\frameworks\esp-idf-v5.5.2\tools/idf_monitor.py -p COM3 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 D:\Smart_Parking\build\Smart_Parking.elf D:\Smart_Parking\build\bootloader\bootloader.elf --force-color -m 'D:\Espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe' 'D:\Espressif\frameworks\esp-idf-v5.5.2\tools\idf.py' '-p' 'COM3'
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6384
+load:0x40078000,len:15916
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v5.5.2 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time May  2 2026 22:40:26[0m
+[0;32mI (27) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v3.1[0m
+[0;32mI (32) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (35) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (42) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (49) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (75) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=0b004h ( 45060) map[0m
+[0;32mI (102) esp_image: segment 1: paddr=0001b02c vaddr=3ffb0000 size=02568h (  9576) load[0m
+[0;32mI (105) esp_image: segment 2: paddr=0001d59c vaddr=40080000 size=02a7ch ( 10876) load[0m
+[0;32mI (110) esp_image: segment 3: paddr=00020020 vaddr=400d0020 size=11910h ( 71952) map[0m
+[0;32mI (138) esp_image: segment 4: paddr=00031938 vaddr=40082a7c size=0c270h ( 49776) load[0m
+[0;32mI (157) esp_image: segment 5: paddr=0003dbb0 vaddr=50000000 size=00020h (    32) load[0m
+[0;32mI (165) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (165) boot: Disabling RNG early entropy source...[0m
+[0;32mI (175) cpu_start: Multicore app[0m
+[0;32mI (183) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (184) cpu_start: Pro cpu start user code[0m
+[0;32mI (184) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (186) app_init: Application information:[0m
+[0;32mI (189) app_init: Project name:     Smart_Parking[0m
+[0;32mI (194) app_init: App version:      b6a998a-dirty[0m
+[0;32mI (198) app_init: Compile time:     May  2 2026 22:37:00[0m
+[0;32mI (203) app_init: ELF file SHA256:  5cc567f2c...[0m
+[0;32mI (208) app_init: ESP-IDF:          v5.5.2[0m
+[0;32mI (211) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (215) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (219) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (223) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (230) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (235) heap_init: At 3FFB2E60 len 0002D1A0 (180 KiB): DRAM[0m
+[0;32mI (240) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (245) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (251) heap_init: At 4008ECEC len 00011314 (68 KiB): IRAM[0m
+[0;33mW (257) spi_flash: Detected boya flash chip but using generic driver. For optimal functionality, enable `SPI_FLASH_SUPPORT_BOYA_CHIP` in menuconfig[0m
+[0;32mI (269) spi_flash: detected chip: generic[0m
+[0;32mI (273) spi_flash: flash io: dio[0m
+[0;33mW (275) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (288) main_task: Started on CPU0[0m
+[0;32mI (298) main_task: Calling app_main()[0m
+[0;32mI (348) RC522_DRIVER: RC522 Initialized successfully[0m
+[0;32mI (348) MAIN: RC522 Firmware Version: 0x18[0m
+[0;32mI (358) MAIN: Card detected! UID: 00 00 00 00[0m
+[0;32mI (1458) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (2568) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (3678) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (4788) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (5898) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (7008) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (8118) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (9228) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (10338) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (11448) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (12558) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (13668) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (14778) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (15888) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (16998) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (18108) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (19218) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (20328) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (21438) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (22548) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (23658) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (24768) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (25878) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (26988) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (28098) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (29208) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (30318) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (31428) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (32538) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (33648) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (34758) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (35868) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (36978) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (38088) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (39198) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (40308) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (41418) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (42528) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (43638) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (44748) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (45858) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (46968) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (48078) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (49188) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (50298) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (51408) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (52518) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (53628) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (54738) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (55848) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (56958) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (58068) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (59178) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (60288) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (61398) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (62508) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (63618) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (64728) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (65838) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (66948) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (68058) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (69168) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (70278) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (71388) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (72498) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (73608) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (74718) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (75828) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (76938) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (78048) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (79158) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (80268) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (81378) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (82488) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (83598) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (84708) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (85818) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (86928) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (88038) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (89148) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (90258) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (91368) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (92478) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (93588) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (94698) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (95808) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (96918) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (98028) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (99138) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (100248) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (101358) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (102468) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (103578) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (104688) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (105798) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (106908) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (108018) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (109128) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (110238) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (111348) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (112458) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (113568) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (114678) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (115788) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (116898) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (118008) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (119118) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (120228) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (121338) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (122448) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (123558) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (124668) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (125778) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (126888) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (127998) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (129108) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (130218) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (131328) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (132438) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (133548) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (134658) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (135768) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (136878) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (137988) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (139098) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (140208) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (141318) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (142428) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (143538) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (144648) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (145758) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (146868) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (147978) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (149088) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (150198) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (151308) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (152418) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (153528) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (154638) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (155748) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (156858) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (157968) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (159078) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (160188) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (161298) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (162408) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (163518) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (164628) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (165738) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (166848) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (167958) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (169068) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (170178) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (171288) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (172398) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (173508) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (174618) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (175728) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (176838) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (177948) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (179058) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (180168) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (181278) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (182388) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (183498) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (184608) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (185718) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (186828) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (187938) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (189048) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (190158) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (191268) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (192378) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (193488) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (194598) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (195708) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (196818) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (197928) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (199038) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (200148) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (201258) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (202368) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (203478) MAIN: Card detected! UID: 57 D8 B1 C0[0m
+[0;32mI (204588) MAIN: Card detected! UID: 57 D8 B1 C0[0m

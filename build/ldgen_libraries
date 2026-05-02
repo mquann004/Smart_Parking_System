@@ -157,4 +157,11 @@ D:/Smart_Parking/build/esp-idf/rt/librt.a
 D:/Smart_Parking/build/esp-idf/spiffs/libspiffs.a
 D:/Smart_Parking/build/esp-idf/wifi_provisioning/libwifi_provisioning.a
 D:/Smart_Parking/build/esp-idf/json/libjson.a
+D:/Smart_Parking/build/esp-idf/rc522/librc522.a
+D:/Smart_Parking/build/esp-idf/wifi_manager/libwifi_manager.a
+D:/Smart_Parking/build/esp-idf/mqtt_manager/libmqtt_manager.a
+D:/Smart_Parking/build/esp-idf/mqtt/libmqtt.a
 D:/Smart_Parking/build/esp-idf/main/libmain.a
+D:/Smart_Parking/build/esp-idf/rc522/librc522.a
+D:/Smart_Parking/build/esp-idf/wifi_manager/libwifi_manager.a
+D:/Smart_Parking/build/esp-idf/mqtt_manager/libmqtt_manager.a

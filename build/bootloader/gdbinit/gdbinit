@@ -1,0 +1,2 @@
+source D:/Smart_Parking/build/bootloader/gdbinit/symbols
+source D:/Smart_Parking/build/bootloader/gdbinit/connect

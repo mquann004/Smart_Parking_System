@@ -559,6 +559,21 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
+  include("D:/Smart_Parking/build/esp-idf/rc522/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("D:/Smart_Parking/build/esp-idf/wifi_manager/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("D:/Smart_Parking/build/esp-idf/mqtt_manager/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
   include("D:/Smart_Parking/build/esp-idf/main/cmake_install.cmake")
 endif()
 
