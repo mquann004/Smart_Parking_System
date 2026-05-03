@@ -54,7 +54,31 @@ def init_db():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs)")
+        
+        # Tạo bảng parking_slots (Trạng thái bãi đỗ)
+        db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS parking_slots (
+                slot_id INT PRIMARY KEY,
+                is_occupied BOOLEAN DEFAULT FALSE,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # Khởi tạo 3 bãi đỗ nếu chưa có
+        for i in range(1, 4):
+            db_cursor.execute("INSERT INTO parking_slots (slot_id) VALUES (%s) ON CONFLICT (slot_id) DO NOTHING", (i,))
+
+        # Tạo bảng gate_logs (Lịch sử ra vào cổng IR)
+        db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS gate_logs (
+                id SERIAL PRIMARY KEY,
+                gate_name VARCHAR(20) NOT NULL, -- 'IN' hoặc 'OUT'
+                state VARCHAR(20) NOT NULL, -- 'detecting' hoặc 'cleared'
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, parking_slots, gate_logs)")
 
     except Exception as e:
         print(f"❌ Lỗi kết nối Database: {e}")
@@ -102,6 +126,28 @@ def on_message(client, userdata, msg):
                 ("UNKNOWN", event)
              )
              print(f"💾 Đã lưu vào DB: Thẻ vừa bị RÚT RA.")
+
+        elif event == "parking_update":
+             slot_id = data.get("slot_id")
+             is_occupied = data.get("is_occupied")
+             if slot_id is not None and is_occupied is not None:
+                 db_cursor.execute(
+                     "UPDATE parking_slots SET is_occupied = %s, updated_at = CURRENT_TIMESTAMP WHERE slot_id = %s",
+                     (is_occupied, slot_id)
+                 )
+                 state_str = "Có xe" if is_occupied else "Trống"
+                 print(f"💾 Đã cập nhật DB: Bãi {slot_id} -> {state_str}")
+
+        elif event == "gate_activity":
+             gate = data.get("gate")
+             state = data.get("state")
+             if gate and state:
+                 db_cursor.execute(
+                     "INSERT INTO gate_logs (gate_name, state) VALUES (%s, %s)",
+                     (gate, state)
+                 )
+                 state_str = "Vừa tới cổng" if state == "detecting" else "Vừa rời cổng"
+                 print(f"💾 Đã lưu vào DB: Cổng {gate} -> {state_str}")
 
     except json.JSONDecodeError:
         print("❌ Lỗi: Tin nhắn không đúng định dạng JSON.")

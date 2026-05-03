@@ -6,8 +6,14 @@
 #include "rc522.h"
 #include "wifi_manager.h"
 #include "mqtt_manager.h"
+#include "ir_sensor.h"
+#include "servo_motor.h"
 
 static const char *TAG = "MAIN";
+
+// Chân điều khiển Servo
+#define SERVO_IN_PIN 13
+#define SERVO_OUT_PIN 14
 
 void app_main(void)
 {
@@ -48,6 +54,21 @@ void app_main(void)
     // Khởi tạo rỗng
     memset(uid, 0, sizeof(uid));
     memset(saved_uid, 0, sizeof(saved_uid));
+
+    // Khởi tạo các chân IR
+    const int IR_PINS[5] = {32, 33, 25, 26, 27};
+    bool last_ir_states[5] = {false, false, false, false, false};
+    for (int i = 0; i < 5; i++) {
+        ir_sensor_init(IR_PINS[i]);
+    }
+
+    // Khởi tạo 2 Servo
+    servo_init(SERVO_IN_PIN, LEDC_CHANNEL_0);
+    servo_init(SERVO_OUT_PIN, LEDC_CHANNEL_1);
+    
+    // Đảm bảo barrier đang đóng lúc khởi động
+    servo_set_angle(LEDC_CHANNEL_0, 0);
+    servo_set_angle(LEDC_CHANNEL_1, 0);
 
     while (1) {
         bool current_card_valid = false;
@@ -95,6 +116,34 @@ void app_main(void)
                     // Publish event card_removed
                     mqtt_manager_publish("smart_parking/rfid", "{\"event\":\"card_removed\"}");
                 }
+            }
+        }
+
+        // --- Logic Đọc và Publish Cảm Biến IR ---
+        for (int i = 0; i < 5; i++) {
+            bool current_state = ir_sensor_read(IR_PINS[i]);
+            
+            // Chỉ gửi MQTT khi trạng thái bị thay đổi
+            if (current_state != last_ir_states[i]) {
+                last_ir_states[i] = current_state;
+                char payload[150];
+                
+                if (i == 0) { // IR_PINS[0] = 32 (Gate IN)
+                    snprintf(payload, sizeof(payload), "{\"event\":\"gate_activity\",\"gate\":\"IN\",\"state\":\"%s\"}", current_state ? "detecting" : "cleared");
+                    ESP_LOGI(TAG, "Gate IN: %s", current_state ? "Xe vừa tới cổng -> MỞ BARIE" : "Xe đã qua cổng -> ĐÓNG BARIE");
+                    servo_set_angle(LEDC_CHANNEL_0, current_state ? 90 : 0);
+                } else if (i == 1) { // IR_PINS[1] = 33 (Gate OUT)
+                    snprintf(payload, sizeof(payload), "{\"event\":\"gate_activity\",\"gate\":\"OUT\",\"state\":\"%s\"}", current_state ? "detecting" : "cleared");
+                    ESP_LOGI(TAG, "Gate OUT: %s", current_state ? "Xe vừa tới cổng -> MỞ BARIE" : "Xe đã qua cổng -> ĐÓNG BARIE");
+                    servo_set_angle(LEDC_CHANNEL_1, current_state ? 90 : 0);
+                } else { // IR_PINS[2,3,4] = 25, 26, 27 (Slots 1, 2, 3)
+                    int slot_id = i - 1; // 1, 2, 3
+                    snprintf(payload, sizeof(payload), "{\"event\":\"parking_update\",\"slot_id\":%d,\"is_occupied\":%s}", slot_id, current_state ? "true" : "false");
+                    ESP_LOGI(TAG, "Slot %d: %s", slot_id, current_state ? "CÓ XE" : "TRỐNG");
+                }
+                
+                // Gửi dữ liệu JSON lên MQTT
+                mqtt_manager_publish("smart_parking/rfid", payload);
             }
         }
 
