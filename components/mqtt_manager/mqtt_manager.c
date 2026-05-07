@@ -4,6 +4,12 @@
 
 static const char *TAG = "MQTT_MANAGER";
 static esp_mqtt_client_handle_t client = NULL;
+static mqtt_data_callback_t app_mqtt_callback = NULL;
+
+void mqtt_manager_set_callback(mqtt_data_callback_t cb)
+{
+    app_mqtt_callback = cb;
+}
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
@@ -19,6 +25,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        esp_mqtt_client_subscribe(client, "smart_parking/command", 0);
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -36,6 +43,16 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
+        
+        if (app_mqtt_callback != NULL) {
+            char *topic_str = strndup(event->topic, event->topic_len);
+            char *data_str = strndup(event->data, event->data_len);
+            if (topic_str && data_str) {
+                app_mqtt_callback(topic_str, data_str);
+            }
+            if (topic_str) free(topic_str);
+            if (data_str) free(data_str);
+        }
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");

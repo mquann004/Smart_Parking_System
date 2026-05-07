@@ -55,6 +55,14 @@ def init_db():
             );
         """)
         
+        # Tạo bảng active_parking (Xe đang trong bãi)
+        db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS active_parking (
+                uid VARCHAR(50) PRIMARY KEY,
+                entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
         # Tạo bảng parking_slots (Trạng thái bãi đỗ)
         db_cursor.execute("""
             CREATE TABLE IF NOT EXISTS parking_slots (
@@ -78,7 +86,7 @@ def init_db():
             );
         """)
         
-        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, parking_slots, gate_logs)")
+        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, active_parking, parking_slots, gate_logs)")
 
     except Exception as e:
         print(f"❌ Lỗi kết nối Database: {e}")
@@ -101,13 +109,14 @@ def on_message(client, userdata, msg):
         event = data.get("event")
         uid = data.get("uid", None)
 
-        if event == "card_detected" and uid:
+        if event == "rfid_scan" and uid:
+            gate = data.get("gate", "UNKNOWN")
             # 1. Lưu log quét thẻ
             db_cursor.execute(
                 "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
-                (uid, event)
+                (uid, f"scan_{gate}")
             )
-            print(f"💾 Đã lưu vào DB: Thẻ [{uid}] vừa quét VÀO.")
+            print(f"💾 Đã lưu log quét thẻ [{uid}] tại cổng {gate}.")
 
             # 2. Tự động thêm user nếu UID này chưa từng tồn tại
             db_cursor.execute("SELECT id FROM users WHERE uid = %s", (uid,))
@@ -117,6 +126,30 @@ def on_message(client, userdata, msg):
                     (uid, f"User_{uid.replace(' ', '')}")
                 )
                 print(f"🆕 Phát hiện thẻ mới! Đã tự động tạo User: User_{uid.replace(' ', '')}")
+
+            # 3. Xử lý logic vào / ra
+            db_cursor.execute("SELECT entry_time FROM active_parking WHERE uid = %s", (uid,))
+            in_parking = db_cursor.fetchone()
+
+            if gate == "IN":
+                if in_parking:
+                    print(f"⚠️ Từ chối vào: Thẻ {uid} ĐANG TRONG BÃI!")
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_in", "msg": "thẻ này đang trong bãi"}))
+                else:
+                    db_cursor.execute("INSERT INTO active_parking (uid) VALUES (%s)", (uid,))
+                    print(f"✅ Cho phép vào: Thẻ {uid} đã đăng ký vào bãi.")
+                    client.publish("smart_parking/command", json.dumps({"action": "allow_in"}))
+            
+            elif gate == "OUT":
+                if in_parking:
+                    db_cursor.execute("DELETE FROM active_parking WHERE uid = %s", (uid,))
+                    print(f"✅ Cho phép ra: Thẻ {uid} hợp lệ, đã rời bãi.")
+                    client.publish("smart_parking/command", json.dumps({"action": "allow_out"}))
+                else:
+                    print(f"⚠️ Từ chối ra: Thẻ {uid} KHÔNG HỢP LỆ (chưa đăng ký vào).")
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_out", "msg": "thẻ ko hợp lệ"}))
+            else:
+                print("⚠️ Cổng không xác định, bỏ qua thẻ.")
 
         elif event == "card_removed":
              # Lưu log thẻ bị rút ra (uid có thể null hoặc không truyền gửi, nên ta lưu chuỗi rỗng hoặc xử lý thêm tùy logic)
