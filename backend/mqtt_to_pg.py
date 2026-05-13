@@ -3,6 +3,7 @@ import time
 import paho.mqtt.client as mqtt
 import psycopg2
 from psycopg2 import sql
+from datetime import datetime
 
 # --- Cấu hình PostgreSQL ---
 DB_HOST = "localhost"
@@ -86,17 +87,114 @@ def init_db():
             );
         """)
         
-        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, active_parking, parking_slots, gate_logs)")
+        # Tạo bảng license_plate_logs (Lịch sử nhận diện biển số xe)
+        db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS license_plate_logs (
+                id SERIAL PRIMARY KEY,
+                license_plate VARCHAR(20) NOT NULL,
+                confidence DECIMAL(3,2),
+                timestamp TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # Tạo indexes cho license_plate_logs
+        db_cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_license_plate_logs_plate 
+            ON license_plate_logs(license_plate);
+        """)
+        db_cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_license_plate_logs_timestamp 
+            ON license_plate_logs(timestamp);
+        """)
+        
+        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, active_parking, parking_slots, gate_logs, license_plate_logs)")
 
     except Exception as e:
         print(f"❌ Lỗi kết nối Database: {e}")
         exit(1)
+
+def handle_license_plate_message(data: dict, mqtt_client) -> bool:
+    """
+    Process license plate detection message
+    
+    Args:
+        data: Parsed JSON message
+        mqtt_client: MQTT client to send servo command
+        
+    Returns:
+        bool: True if successfully processed, False otherwise
+    """
+    try:
+        # Validate required fields
+        required_fields = ["event", "license_plate", "timestamp", "confidence"]
+        for field in required_fields:
+            if field not in data:
+                print(f"⚠️ Missing required field: {field}")
+                return False
+        
+        # Validate event type
+        if data["event"] != "license_plate_detected":
+            print(f"⚠️ Invalid event type: {data['event']}")
+            return False
+        
+        # Validate license_plate
+        license_plate = data["license_plate"]
+        if not isinstance(license_plate, str) or not license_plate or len(license_plate) > 20:
+            print(f"⚠️ Invalid license_plate: {license_plate}")
+            return False
+        
+        # Validate confidence
+        confidence = data["confidence"]
+        if not isinstance(confidence, (int, float)) or confidence < 0.0 or confidence > 1.0:
+            print(f"⚠️ Invalid confidence: {confidence}")
+            return False
+        
+        # Parse timestamp
+        try:
+            timestamp = datetime.fromisoformat(data["timestamp"])
+        except (ValueError, TypeError) as e:
+            print(f"⚠️ Invalid timestamp format: {data['timestamp']} - {e}")
+            return False
+        
+        # Insert into database
+        try:
+            db_cursor.execute(
+                "INSERT INTO license_plate_logs (license_plate, confidence, timestamp) VALUES (%s, %s, %s)",
+                (license_plate, confidence, timestamp)
+            )
+            print(f"💾 Đã lưu biển số xe: {license_plate} (confidence: {confidence:.2f})")
+            
+            # ✅ SEND SERVO OPEN COMMAND after successful license plate detection
+            servo_command = {
+                "action": "open_gate",
+                "gate": "IN",
+                "reason": "license_plate_verified",
+                "license_plate": license_plate
+            }
+            mqtt_client.publish("smart_parking/servo/command", json.dumps(servo_command))
+            print(f"🚪 Đã gửi lệnh mở cổng IN cho xe {license_plate}")
+            
+            return True
+        except Exception as db_error:
+            print(f"❌ Database insert failed for {license_plate}: {db_error}")
+            import traceback
+            traceback.print_exc()
+            return False
+        
+    except Exception as e:
+        print(f"❌ Error validating license plate message: {e}")
+        return False
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"✅ Đã kết nối tới MQTT Broker: {MQTT_BROKER}")
         client.subscribe(MQTT_TOPIC)
         print(f"📡 Đang lắng nghe trên topic: {MQTT_TOPIC}")
+        
+        # Subscribe to license plate topic
+        client.subscribe("smart_parking/license_plate")
+        print(f"📡 Đang lắng nghe trên topic: smart_parking/license_plate")
     else:
         print(f"❌ Lỗi kết nối MQTT, mã lỗi: {rc}")
 
@@ -181,6 +279,10 @@ def on_message(client, userdata, msg):
                  )
                  state_str = "Vừa tới cổng" if state == "detecting" else "Vừa rời cổng"
                  print(f"💾 Đã lưu vào DB: Cổng {gate} -> {state_str}")
+        
+        elif event == "license_plate_detected":
+             # Handle license plate detection event
+             handle_license_plate_message(data, client)
 
     except json.JSONDecodeError:
         print("❌ Lỗi: Tin nhắn không đúng định dạng JSON.")

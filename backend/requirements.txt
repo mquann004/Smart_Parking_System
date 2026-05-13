@@ -1,2 +1,8 @@
 paho-mqtt
 psycopg2
+fastapi
+uvicorn
+pydantic
+python-multipart
+opencv-python
+httpx

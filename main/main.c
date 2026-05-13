@@ -20,6 +20,7 @@ static bool servo_out_open = false;
 
 // Hàm callback xử lý lệnh MQTT từ backend
 void mqtt_data_handler(const char *topic, const char *data) {
+    // Xử lý lệnh từ backend (RFID validation)
     if (strcmp(topic, "smart_parking/command") == 0) {
         cJSON *root = cJSON_Parse(data);
         if (root == NULL) return;
@@ -27,9 +28,8 @@ void mqtt_data_handler(const char *topic, const char *data) {
         cJSON *action = cJSON_GetObjectItem(root, "action");
         if (action && action->valuestring) {
             if (strcmp(action->valuestring, "allow_in") == 0) {
-                ESP_LOGI(TAG, "==> DANG KI VAO BAI THANH CONG. MO BARIE IN.");
-                servo_set_angle(LEDC_CHANNEL_0, 90);
-                servo_in_open = true;
+                ESP_LOGI(TAG, "==> RFID DANG KI VAO BAI THANH CONG. CHO CAMERA NHAN DIEN...");
+                // KHÔNG mở servo ở đây nữa, chờ camera nhận diện
             } else if (strcmp(action->valuestring, "deny_in") == 0) {
                 cJSON *msg = cJSON_GetObjectItem(root, "msg");
                 ESP_LOGW(TAG, "==> TU CHOI VAO BAI: %s", msg ? msg->valuestring : "Unknown");
@@ -40,6 +40,45 @@ void mqtt_data_handler(const char *topic, const char *data) {
             } else if (strcmp(action->valuestring, "deny_out") == 0) {
                 cJSON *msg = cJSON_GetObjectItem(root, "msg");
                 ESP_LOGW(TAG, "==> TU CHOI RA BAI: %s", msg ? msg->valuestring : "Unknown");
+            }
+        }
+        cJSON_Delete(root);
+    }
+    
+    // Xử lý lệnh mở servo (SAU KHI camera nhận diện biển số)
+    else if (strcmp(topic, "smart_parking/servo/command") == 0) {
+        cJSON *root = cJSON_Parse(data);
+        if (root == NULL) return;
+        
+        cJSON *action = cJSON_GetObjectItem(root, "action");
+        cJSON *gate = cJSON_GetObjectItem(root, "gate");
+        cJSON *license_plate = cJSON_GetObjectItem(root, "license_plate");
+        
+        if (action && action->valuestring && gate && gate->valuestring) {
+            if (strcmp(action->valuestring, "open_gate") == 0) {
+                if (strcmp(gate->valuestring, "IN") == 0) {
+                    ESP_LOGI(TAG, "========================================");
+                    ESP_LOGI(TAG, "✅ CAMERA NHAN DIEN THANH CONG!");
+                    if (license_plate && license_plate->valuestring) {
+                        ESP_LOGI(TAG, "   Bien so xe: %s", license_plate->valuestring);
+                    }
+                    ESP_LOGI(TAG, "   => MO BARIE IN");
+                    ESP_LOGI(TAG, "========================================");
+                    
+                    servo_set_angle(LEDC_CHANNEL_0, 90);
+                    servo_in_open = true;
+                } else if (strcmp(gate->valuestring, "OUT") == 0) {
+                    ESP_LOGI(TAG, "========================================");
+                    ESP_LOGI(TAG, "✅ CAMERA NHAN DIEN THANH CONG!");
+                    if (license_plate && license_plate->valuestring) {
+                        ESP_LOGI(TAG, "   Bien so xe: %s", license_plate->valuestring);
+                    }
+                    ESP_LOGI(TAG, "   => MO BARIE OUT");
+                    ESP_LOGI(TAG, "========================================");
+                    
+                    servo_set_angle(LEDC_CHANNEL_1, 90);
+                    servo_out_open = true;
+                }
             }
         }
         cJSON_Delete(root);
