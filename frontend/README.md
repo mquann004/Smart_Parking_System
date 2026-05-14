@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# 🖥️ Smart Parking Management Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, high-performance administrative interface for real-time parking monitoring and facility management. Built with **React 19**, **TypeScript**, and **Tailwind CSS**.
 
-Currently, two official plugins are available:
+## 🎨 Design Philosophy
+- **Premium Aesthetics**: Clean, dark-mode optimized interface with a focus on data visualization.
+- **Real-time Responsiveness**: Instant UI updates using **React Query** and optimized API polling.
+- **User-Centric UX**: Intuitive controls for gate management and billing configuration.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Key Features
+- **Live Gate Monitoring**: Real-time status of Entry/Exit gates with AI-detected license plate verification.
+- **Dynamic Slot Tracking**: Visual representation of parking lot occupancy.
+- **Billing Management**: Comprehensive tools to set and update parking fee structures.
+- **History & Logs**: Detailed, searchable history of all vehicle movements.
+- **Video Feed Integration**: Integrated proxy streams for live camera monitoring.
 
-## React Compiler
+## 🛠️ Tech Stack
+- **Framework**: [React 19](https://react.dev/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Data Fetching**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📦 Installation & Development
 
-## Expanding the ESLint configuration
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+2. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:5173`.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+3. **Build for Production**
+   ```bash
+   npm run build
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📂 Component Structure
+- `/src/components`: Reusable UI components (Buttons, Cards, Modals).
+- `/src/hooks`: Custom React hooks for API interaction and state.
+- `/src/pages`: Main application views (Dashboard, History, Settings).
+- `/src/services`: API client and data transformation logic.
+- `/src/store`: Global state management using Zustand.

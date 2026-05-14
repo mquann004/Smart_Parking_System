@@ -1,33 +1,66 @@
-# ESP-IDF ignore files
+# =============================================================================
+# Smart Parking System - Global Git Ignore
+# =============================================================================
+
+# --- Firmware (ESP-IDF) ---
 build/
 sdkconfig
 sdkconfig.old
 managed_components/
 dependencies.lock
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
 
-# VS Code ignore files
-.vscode/
-*.code-workspace
-
-# Python ignore files
+# --- Backend (Python) ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+env/
 venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
 .env
+.pytest_cache/
 
-# Node.js / Frontend (website_smart_parking)
+# --- Frontend (React/Node) ---
 node_modules/
 dist/
+dist-ssr/
 *.local
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# System & IDE files
+# --- Operating System & IDEs ---
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+.vscode/
+!.vscode/extensions.json
 .idea/
+*.sublime-project
+*.sublime-workspace
 
-# Smart Parking specific
+# --- Project Specific ---
 *.exe
-*.log
 *.db
 backend/license_plate_recognize/lisence-plate/notebook/
+backend/license_plate_recognize/lisence-plate/runs/
+backend/license_plate_recognize/lisence-plate/yolov5/
