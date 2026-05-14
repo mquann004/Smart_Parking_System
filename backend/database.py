@@ -41,3 +41,19 @@ def query_db(query, args=(), one=False):
         return None
     finally:
         conn.close()
+
+def execute_db(query, args=()):
+    """Thực thi câu lệnh SQL (INSERT, UPDATE, DELETE)"""
+    conn = get_db_connection()
+    if not conn:
+        return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute(query, args)
+            conn.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Lỗi thực thi câu lệnh: {e}")
+        return False
+    finally:
+        conn.close()

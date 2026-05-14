@@ -17,8 +17,8 @@ export default function Vehicles() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Danh sách xe trong bãi</h1>
-      <Card title="Bộ lọc">
+      <h1 className="text-2xl font-bold">Current Occupancy</h1>
+      <Card title="Filters">
         <div className="grid gap-2 md:grid-cols-2">
 
           <select
@@ -26,29 +26,29 @@ export default function Vehicles() {
             onChange={(event) => setTypeFilter(event.target.value as 'all' | 'car' | 'motorbike')}
             className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
           >
-            <option value="all">Tất cả loại xe</option>
-            <option value="car">Ô tô</option>
-            <option value="motorbike">Xe máy</option>
+            <option value="all">All Vehicle Types</option>
+            <option value="car">Car</option>
+            <option value="motorbike">Motorbike</option>
           </select>
         </div>
       </Card>
-      <Card title="Xe hiện tại">
+      <Card title="Parked Vehicles">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-slate-300">
               <tr>
 
-                <th className="p-2">Loại xe</th>
-                <th className="p-2">Ô đỗ</th>
-                <th className="p-2">Giờ vào</th>
-                <th className="p-2">Đã gửi</th>
+                <th className="p-2">Type</th>
+                <th className="p-2">Slot</th>
+                <th className="p-2">Entry Time</th>
+                <th className="p-2">Duration</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((vehicle) => (
                 <tr key={vehicle.id} className="border-t border-slate-700">
 
-                  <td className="p-2">{vehicle.type === 'car' ? 'Ô tô' : 'Xe máy'}</td>
+                  <td className="p-2">{vehicle.type === 'car' ? 'Car' : 'Motorbike'}</td>
                   <td className="p-2">{vehicle.slotId}</td>
                   <td className="p-2">{toDateTime(vehicle.checkInAt)}</td>
                   <td className="p-2">{timeAgoStrict(vehicle.checkInAt)}</td>

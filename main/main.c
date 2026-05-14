@@ -18,6 +18,36 @@ static bool car_at_out = false;
 static bool servo_in_open = false;
 static bool servo_out_open = false;
 
+// Forward declaration
+void publish_gate_physical_status(const char* gate, bool is_open);
+
+// Task tự động đóng cổng sau 3 giây
+void gate_auto_close_task(void *pvParameters) {
+    int gate_id = (int)pvParameters; // 0: IN, 1: OUT
+    vTaskDelay(pdMS_TO_TICKS(3000));
+    
+    if (gate_id == 0) {
+        servo_set_angle(LEDC_CHANNEL_0, 0);
+        servo_in_open = false;
+        publish_gate_physical_status("IN", false);
+        ESP_LOGI(TAG, "=> BARIE IN TU DONG DONG SAU 3 GIAY");
+    } else {
+        servo_set_angle(LEDC_CHANNEL_1, 0);
+        servo_out_open = false;
+        publish_gate_physical_status("OUT", false);
+        ESP_LOGI(TAG, "=> BARIE OUT TU DONG DONG SAU 3 GIAY");
+    }
+    vTaskDelete(NULL);
+}
+
+// Helper to publish physical gate status
+void publish_gate_physical_status(const char* gate, bool is_open) {
+    char payload[100];
+    snprintf(payload, sizeof(payload), "{\"event\":\"gate_activity\",\"gate\":\"%s\",\"state\":\"%s\"}", 
+             gate, is_open ? "open" : "closed");
+    mqtt_manager_publish("smart_parking/rfid", payload);
+}
+
 // Hàm callback xử lý lệnh MQTT từ backend
 void mqtt_data_handler(const char *topic, const char *data) {
     // Xử lý lệnh từ backend (RFID validation)
@@ -34,12 +64,14 @@ void mqtt_data_handler(const char *topic, const char *data) {
                 cJSON *msg = cJSON_GetObjectItem(root, "msg");
                 ESP_LOGW(TAG, "==> TU CHOI VAO BAI: %s", msg ? msg->valuestring : "Unknown");
             } else if (strcmp(action->valuestring, "allow_out") == 0) {
-                ESP_LOGI(TAG, "==> KIEM TRA RA BAI THANH CONG. MO BARIE OUT.");
-                servo_set_angle(LEDC_CHANNEL_1, 90);
-                servo_out_open = true;
+                ESP_LOGI(TAG, "==> KIEM TRA THE THANH CONG. CHO CAMERA DOI CHIEU BIEN SO...");
+                // KHÔNG mở servo ở đây, chờ camera đối chiếu biển số
             } else if (strcmp(action->valuestring, "deny_out") == 0) {
                 cJSON *msg = cJSON_GetObjectItem(root, "msg");
                 ESP_LOGW(TAG, "==> TU CHOI RA BAI: %s", msg ? msg->valuestring : "Unknown");
+            } else if (strcmp(action->valuestring, "full_parking") == 0) {
+                cJSON *msg = cJSON_GetObjectItem(root, "msg");
+                ESP_LOGW(TAG, "==> BAI DO XE DA DAY: %s", msg ? msg->valuestring : "Unknown");
             }
         }
         cJSON_Delete(root);
@@ -53,31 +85,67 @@ void mqtt_data_handler(const char *topic, const char *data) {
         cJSON *action = cJSON_GetObjectItem(root, "action");
         cJSON *gate = cJSON_GetObjectItem(root, "gate");
         cJSON *license_plate = cJSON_GetObjectItem(root, "license_plate");
+        cJSON *reason = cJSON_GetObjectItem(root, "reason");
+        
+        bool is_manual = false;
+        if (reason && reason->valuestring && strcmp(reason->valuestring, "manual_control") == 0) {
+            is_manual = true;
+        }
         
         if (action && action->valuestring && gate && gate->valuestring) {
             if (strcmp(action->valuestring, "open_gate") == 0) {
                 if (strcmp(gate->valuestring, "IN") == 0) {
-                    ESP_LOGI(TAG, "========================================");
-                    ESP_LOGI(TAG, "✅ CAMERA NHAN DIEN THANH CONG!");
-                    if (license_plate && license_plate->valuestring) {
-                        ESP_LOGI(TAG, "   Bien so xe: %s", license_plate->valuestring);
+                    if (is_manual) {
+                        ESP_LOGI(TAG, "=> LENH MO BARIE IN THU CONG (KHONG TU DONG DONG)");
+                    } else {
+                        ESP_LOGI(TAG, "========================================");
+                        ESP_LOGI(TAG, "✅ CAMERA NHAN DIEN THANH CONG!");
+                        if (license_plate && license_plate->valuestring) {
+                            ESP_LOGI(TAG, "   Bien so xe: %s", license_plate->valuestring);
+                        }
+                        ESP_LOGI(TAG, "   => MO BARIE IN");
+                        ESP_LOGI(TAG, "========================================");
                     }
-                    ESP_LOGI(TAG, "   => MO BARIE IN");
-                    ESP_LOGI(TAG, "========================================");
                     
                     servo_set_angle(LEDC_CHANNEL_0, 90);
                     servo_in_open = true;
-                } else if (strcmp(gate->valuestring, "OUT") == 0) {
-                    ESP_LOGI(TAG, "========================================");
-                    ESP_LOGI(TAG, "✅ CAMERA NHAN DIEN THANH CONG!");
-                    if (license_plate && license_plate->valuestring) {
-                        ESP_LOGI(TAG, "   Bien so xe: %s", license_plate->valuestring);
+                    publish_gate_physical_status("IN", true);
+                    
+                    if (!is_manual) {
+                        xTaskCreate(gate_auto_close_task, "gate_close_in", 2048, (void*)0, 5, NULL);
                     }
-                    ESP_LOGI(TAG, "   => MO BARIE OUT");
-                    ESP_LOGI(TAG, "========================================");
+                } else if (strcmp(gate->valuestring, "OUT") == 0) {
+                    if (is_manual) {
+                        ESP_LOGI(TAG, "=> LENH MO BARIE OUT THU CONG (KHONG TU DONG DONG)");
+                    } else {
+                        ESP_LOGI(TAG, "========================================");
+                        ESP_LOGI(TAG, "✅ CAMERA NHAN DIEN THANH CONG!");
+                        if (license_plate && license_plate->valuestring) {
+                            ESP_LOGI(TAG, "   Bien so xe: %s", license_plate->valuestring);
+                        }
+                        ESP_LOGI(TAG, "   => MO BARIE OUT");
+                        ESP_LOGI(TAG, "========================================");
+                    }
                     
                     servo_set_angle(LEDC_CHANNEL_1, 90);
                     servo_out_open = true;
+                    publish_gate_physical_status("OUT", true);
+                    
+                    if (!is_manual) {
+                        xTaskCreate(gate_auto_close_task, "gate_close_out", 2048, (void*)1, 5, NULL);
+                    }
+                }
+            } else if (strcmp(action->valuestring, "close_gate") == 0) {
+                if (strcmp(gate->valuestring, "IN") == 0) {
+                    ESP_LOGI(TAG, "=> LENH DONG BARIE IN THU CONG");
+                    servo_set_angle(LEDC_CHANNEL_0, 0);
+                    servo_in_open = false;
+                    publish_gate_physical_status("IN", false);
+                } else if (strcmp(gate->valuestring, "OUT") == 0) {
+                    ESP_LOGI(TAG, "=> LENH DONG BARIE OUT THU CONG");
+                    servo_set_angle(LEDC_CHANNEL_1, 0);
+                    servo_out_open = false;
+                    publish_gate_physical_status("OUT", false);
                 }
             }
         }
@@ -245,6 +313,7 @@ void app_main(void)
                         if (servo_in_open) {
                             servo_set_angle(LEDC_CHANNEL_0, 0);
                             servo_in_open = false;
+                            publish_gate_physical_status("IN", false);
                         }
                     }
                 } else if (i == 1) { // IR_PINS[1] = 33 (Gate OUT)
@@ -257,6 +326,7 @@ void app_main(void)
                         if (servo_out_open) {
                             servo_set_angle(LEDC_CHANNEL_1, 0);
                             servo_out_open = false;
+                            publish_gate_physical_status("OUT", false);
                         }
                     }
                 } else { // IR_PINS[2,3,4] = 25, 26, 27 (Slots 1, 2, 3)

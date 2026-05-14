@@ -3,9 +3,9 @@ import type { FeePolicy, GateEvent, GateState, ParkingSlot, Vehicle } from '../t
 const now = Date.now()
 
 export const seedSlots: ParkingSlot[] = [
-  { id: 'slot-1', label: 'Ô 1', status: 'occupied', plateNumber: '51H-123.45' },
-  { id: 'slot-2', label: 'Ô 2', status: 'available' },
-  { id: 'slot-3', label: 'Ô 3', status: 'occupied', plateNumber: '59A-998.11' },
+  { id: 'slot-1', label: 'SLOT 1', status: 'occupied', plateNumber: '51H-123.45' },
+  { id: 'slot-2', label: 'SLOT 2', status: 'available' },
+  { id: 'slot-3', label: 'SLOT 3', status: 'occupied', plateNumber: '59A-998.11' },
 ]
 
 export const seedVehicles: Vehicle[] = [

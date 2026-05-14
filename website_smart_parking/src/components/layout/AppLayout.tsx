@@ -3,8 +3,8 @@ import { CarFront, Clock3, CreditCard, DoorOpen, LayoutDashboard } from 'lucide-
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/history', label: 'Lịch sử', icon: Clock3 },
-  { to: '/billing', label: 'Tính phí', icon: CreditCard },
+  { to: '/history', label: 'History', icon: Clock3 },
+  { to: '/billing', label: 'Billing Settings', icon: CreditCard },
 ]
 
 import { useVehiclesQuery } from '../../hooks/useParkingData'
@@ -32,7 +32,7 @@ export default function AppLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
             <Link to="/" className="text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Hệ thống bãi đỗ xe thông minh
+              SMART PARKING AI
             </Link>
             <div className="hidden items-center gap-2 rounded-full bg-slate-800/50 px-3 py-1 text-xs text-slate-300 md:flex">
               <Wifi size={14} className="text-emerald-400" />
@@ -48,8 +48,8 @@ export default function AppLayout() {
               <CarFront size={18} />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-slate-400">Xe trong bãi</span>
-              <span className="text-sm font-bold leading-none text-white">{vehicles.length} Xe</span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-400">Current Occupancy</span>
+              <span className="text-sm font-bold leading-none text-white">{vehicles.length} Vehicles</span>
             </div>
           </Link>
         </div>

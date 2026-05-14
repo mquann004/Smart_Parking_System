@@ -16,6 +16,18 @@ __pycache__/
 venv/
 .env
 
-# System files
+# Node.js / Frontend (website_smart_parking)
+node_modules/
+dist/
+*.local
+
+# System & IDE files
 .DS_Store
 Thumbs.db
+.idea/
+
+# Smart Parking specific
+*.exe
+*.log
+*.db
+license_plate_recognize/lisence-plate/notebook/

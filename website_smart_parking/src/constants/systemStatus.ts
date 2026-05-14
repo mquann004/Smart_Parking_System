@@ -4,9 +4,10 @@ export const SLOT_COLOR = {
 } as const
 
 export const GATE_STATUS_LABEL: Record<string, string> = {
-  idle: 'Sẵn sàng',
-  vehicle_detected: 'Phát hiện xe',
-  waiting_rfid: 'Chờ quét RFID',
-  gate_open: 'Cổng đang mở',
-  gate_closed: 'Cổng đã đóng',
+  idle: 'Ready',
+  vehicle_detected: 'Vehicle Detected',
+  waiting_rfid: 'Waiting for RFID',
+  waiting_confirmation: 'Waiting for Confirmation',
+  gate_open: 'Gate Opened',
+  gate_closed: 'Gate Closed',
 }

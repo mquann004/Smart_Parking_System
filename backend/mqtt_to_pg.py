@@ -21,6 +21,29 @@ MQTT_TOPIC = "smart_parking/rfid"
 db_conn = None
 db_cursor = None
 
+# Biến trạng thái cổng vào (Sequential logic context)
+gate_in_context = {
+    "is_car_present": False,
+    "is_session_active": False,
+    "is_parking_full": False,
+    "is_rfid_valid": False,
+    "uid": None,
+    "pending_entry_uid": None,
+    "pending_entry_plate": None,
+    "is_plate_handled": False
+}
+
+# Biến trạng thái cổng ra
+gate_out_context = {
+    "is_car_present": False,
+    "is_session_active": False,
+    "is_rfid_valid": False,
+    "uid": None,
+    "expected_plate": None,
+    "pending_exit_uid": None,
+    "is_plate_handled": False
+}
+
 def init_db():
     """Tạo kết nối DB và khởi tạo các bảng cần thiết nếu chưa có"""
     global db_conn, db_cursor
@@ -60,6 +83,7 @@ def init_db():
         db_cursor.execute("""
             CREATE TABLE IF NOT EXISTS active_parking (
                 uid VARCHAR(50) PRIMARY KEY,
+                license_plate VARCHAR(20),
                 entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -71,6 +95,38 @@ def init_db():
                 is_occupied BOOLEAN DEFAULT FALSE,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        """)
+        
+        # Tạo bảng parking_history (Lịch sử ra vào tổng hợp)
+        db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS parking_history (
+                id SERIAL PRIMARY KEY,
+                uid VARCHAR(50) NOT NULL,
+                license_plate VARCHAR(20),
+                type VARCHAR(10) NOT NULL, -- 'IN' hoặc 'OUT'
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # Tạo bảng parking_settings (Cấu hình giá tiền)
+        db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS parking_settings (
+                id INT PRIMARY KEY,
+                first_hour_fee INT DEFAULT 5000,
+                next_hour_fee INT DEFAULT 3000,
+                overnight_fee INT DEFAULT 20000,
+                first_period_mins INT DEFAULT 60,
+                overnight_threshold_mins INT DEFAULT 720, -- 12h
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            -- Đảm bảo các cột mới tồn tại nếu bảng đã có từ trước
+            ALTER TABLE parking_settings ADD COLUMN IF NOT EXISTS first_period_mins INT DEFAULT 60;
+            ALTER TABLE parking_settings ADD COLUMN IF NOT EXISTS overnight_threshold_mins INT DEFAULT 720;
+
+            INSERT INTO parking_settings (id, first_hour_fee, next_hour_fee, overnight_fee, first_period_mins, overnight_threshold_mins)
+            VALUES (1, 5000, 3000, 20000, 60, 720)
+            ON CONFLICT (id) DO NOTHING;
         """)
         
         # Khởi tạo 3 bãi đỗ nếu chưa có
@@ -98,17 +154,18 @@ def init_db():
             );
         """)
         
-        # Tạo indexes cho license_plate_logs
+        # Tạo bảng pending_confirmations (Chờ người dùng xác nhận biển số)
         db_cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_license_plate_logs_plate 
-            ON license_plate_logs(license_plate);
-        """)
-        db_cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_license_plate_logs_timestamp 
-            ON license_plate_logs(timestamp);
+            CREATE TABLE IF NOT EXISTS pending_confirmations (
+                gate VARCHAR(10) PRIMARY KEY, -- 'IN' hoặc 'OUT'
+                uid VARCHAR(50),
+                license_plate VARCHAR(20),
+                confidence DECIMAL(3,2),
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         """)
         
-        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, active_parking, parking_slots, gate_logs, license_plate_logs)")
+        print("✅ Đã kiểm tra và khởi tạo các bảng (users, rfid_logs, active_parking, parking_slots, gate_logs, license_plate_logs, pending_confirmations)")
 
     except Exception as e:
         print(f"❌ Lỗi kết nối Database: {e}")
@@ -116,74 +173,93 @@ def init_db():
 
 def handle_license_plate_message(data: dict, mqtt_client) -> bool:
     """
-    Process license plate detection message
-    
-    Args:
-        data: Parsed JSON message
-        mqtt_client: MQTT client to send servo command
-        
-    Returns:
-        bool: True if successfully processed, False otherwise
+    Process license plate detection message for both entry and exit gates
     """
     try:
         # Validate required fields
-        required_fields = ["event", "license_plate", "timestamp", "confidence"]
+        required_fields = ["event", "license_plate", "timestamp", "confidence", "gate"]
         for field in required_fields:
             if field not in data:
                 print(f"⚠️ Missing required field: {field}")
                 return False
         
-        # Validate event type
-        if data["event"] != "license_plate_detected":
-            print(f"⚠️ Invalid event type: {data['event']}")
-            return False
-        
-        # Validate license_plate
         license_plate = data["license_plate"]
-        if not isinstance(license_plate, str) or not license_plate or len(license_plate) > 20:
-            print(f"⚠️ Invalid license_plate: {license_plate}")
-            return False
-        
-        # Validate confidence
         confidence = data["confidence"]
-        if not isinstance(confidence, (int, float)) or confidence < 0.0 or confidence > 1.0:
-            print(f"⚠️ Invalid confidence: {confidence}")
-            return False
+        gate_type = data["gate"] # "entry" or "exit"
         
-        # Parse timestamp
         try:
             timestamp = datetime.fromisoformat(data["timestamp"])
-        except (ValueError, TypeError) as e:
-            print(f"⚠️ Invalid timestamp format: {data['timestamp']} - {e}")
-            return False
-        
-        # Insert into database
-        try:
+        except (ValueError, TypeError):
+            timestamp = datetime.now()
+
+        # 1. Lưu log biển số vào DB (luôn lưu lịch sử)
+        db_cursor.execute(
+            "INSERT INTO license_plate_logs (license_plate, confidence, timestamp) VALUES (%s, %s, %s)",
+            (license_plate, confidence, timestamp)
+        )
+        print(f"💾 Đã lưu biển số xe: {license_plate} ({gate_type})")
+
+        # 2. Xử lý logic cổng vào (ENTRY)
+        if gate_type == "entry":
+            if not gate_in_context["is_rfid_valid"]:
+                print(f"⚠️ Từ chối cổng vào: Xe {license_plate} chưa quét thẻ RFID.")
+                return False
+            
+            # 1. Kiểm tra xem đã có yêu cầu nào đang chờ chưa
+            db_cursor.execute("SELECT 1 FROM pending_confirmations WHERE gate = %s", ("IN",))
+            if db_cursor.fetchone():
+                return True # Đang chờ xác nhận, không chèn thêm
+            
+            # 2. Kiểm tra cooldown (tránh việc vừa nhấn Xong nó lại hiện lên ngay)
+            now = time.time()
+            last_scan = gate_in_context.get("last_scan_time", 0)
+            if now - last_scan < 5: # Cooldown 5 giây
+                return True
+
+            # Thay vì mở cổng ngay, lưu vào bảng chờ xác nhận
             db_cursor.execute(
-                "INSERT INTO license_plate_logs (license_plate, confidence, timestamp) VALUES (%s, %s, %s)",
-                (license_plate, confidence, timestamp)
+                "INSERT INTO pending_confirmations (gate, uid, license_plate, confidence) VALUES (%s, %s, %s, %s) ON CONFLICT (gate) DO UPDATE SET uid = EXCLUDED.uid, license_plate = EXCLUDED.license_plate, confidence = EXCLUDED.confidence, timestamp = CURRENT_TIMESTAMP",
+                ("IN", gate_in_context["uid"], license_plate, confidence)
             )
-            print(f"💾 Đã lưu biển số xe: {license_plate} (confidence: {confidence:.2f})")
-            
-            # ✅ SEND SERVO OPEN COMMAND after successful license plate detection
-            servo_command = {
-                "action": "open_gate",
-                "gate": "IN",
-                "reason": "license_plate_verified",
-                "license_plate": license_plate
-            }
-            mqtt_client.publish("smart_parking/servo/command", json.dumps(servo_command))
-            print(f"🚪 Đã gửi lệnh mở cổng IN cho xe {license_plate}")
-            
+            gate_in_context["last_scan_time"] = now
+            print(f"⏳ [ENTRY] Đang chờ người dùng xác nhận biển số: {license_plate}")
             return True
-        except Exception as db_error:
-            print(f"❌ Database insert failed for {license_plate}: {db_error}")
-            import traceback
-            traceback.print_exc()
-            return False
-        
+
+        # 3. Xử lý logic cổng ra (EXIT)
+        elif gate_type == "exit":
+            if not gate_out_context["is_rfid_valid"]:
+                print(f"⚠️ Từ chối cổng ra: Xe {license_plate} chưa quét thẻ RFID.")
+                return False
+            
+            # 1. Kiểm tra xem đã có yêu cầu nào đang chờ chưa
+            db_cursor.execute("SELECT 1 FROM pending_confirmations WHERE gate = %s", ("OUT",))
+            if db_cursor.fetchone():
+                return True # Đang chờ xác nhận
+            
+            # 2. Kiểm tra cooldown
+            now = time.time()
+            last_scan = gate_out_context.get("last_scan_time", 0)
+            if now - last_scan < 5:
+                return True
+
+            # ĐỐI CHIẾU BIỂN SỐ (Vẫn đối chiếu để cảnh báo nếu cần, nhưng vẫn chờ xác nhận)
+            expected = gate_out_context["expected_plate"]
+            if expected and license_plate != expected:
+                print(f"❌ CẢNH BÁO: Biển số KHÔNG KHỚP! (Vào: {expected}, Ra: {license_plate})")
+            
+            # Lưu vào bảng chờ xác nhận
+            db_cursor.execute(
+                "INSERT INTO pending_confirmations (gate, uid, license_plate, confidence) VALUES (%s, %s, %s, %s) ON CONFLICT (gate) DO UPDATE SET uid = EXCLUDED.uid, license_plate = EXCLUDED.license_plate, confidence = EXCLUDED.confidence, timestamp = CURRENT_TIMESTAMP",
+                ("OUT", gate_out_context["uid"], license_plate, confidence)
+            )
+            gate_out_context["last_scan_time"] = now
+            print(f"⏳ [EXIT] Đang chờ người dùng xác nhận biển số: {license_plate}")
+            return True
+
     except Exception as e:
-        print(f"❌ Error validating license plate message: {e}")
+        print(f"❌ Error handling license plate message: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def on_connect(client, userdata, flags, rc):
@@ -209,49 +285,72 @@ def on_message(client, userdata, msg):
 
         if event == "rfid_scan" and uid:
             gate = data.get("gate", "UNKNOWN")
-            # 1. Lưu log quét thẻ
-            db_cursor.execute(
-                "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
-                (uid, f"scan_{gate}")
-            )
-            print(f"💾 Đã lưu log quét thẻ [{uid}] tại cổng {gate}.")
-
-            # 2. Tự động thêm user nếu UID này chưa từng tồn tại
-            db_cursor.execute("SELECT id FROM users WHERE uid = %s", (uid,))
-            if not db_cursor.fetchone():
-                db_cursor.execute(
-                    "INSERT INTO users (uid, name) VALUES (%s, %s)",
-                    (uid, f"User_{uid.replace(' ', '')}")
-                )
-                print(f"🆕 Phát hiện thẻ mới! Đã tự động tạo User: User_{uid.replace(' ', '')}")
+            
+            # Nếu là cổng vào, kiểm tra xem đã có phiên đăng ký chưa (đã từng chạm IR)
+            if gate == "IN":
+                if gate_in_context.get("is_parking_full", False):
+                    print(f"⚠️ Từ chối RFID: Bãi đỗ xe đã đầy.")
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_in", "msg": "Nhà xe đã hết chỗ"}))
+                    return
+                if not gate_in_context.get("is_session_active", False):
+                    print(f"⚠️ Từ chối RFID: Chưa chạm cảm biến IR lần nào.")
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_in", "msg": "Hãy tiến xe vào cổng trước"}))
+                    return
 
             # 3. Xử lý logic vào / ra
-            db_cursor.execute("SELECT entry_time FROM active_parking WHERE uid = %s", (uid,))
+            db_cursor.execute("SELECT license_plate FROM active_parking WHERE uid = %s", (uid,))
             in_parking = db_cursor.fetchone()
 
             if gate == "IN":
                 if in_parking:
                     print(f"⚠️ Từ chối vào: Thẻ {uid} ĐANG TRONG BÃI!")
-                    client.publish("smart_parking/command", json.dumps({"action": "deny_in", "msg": "thẻ này đang trong bãi"}))
+                    db_cursor.execute(
+                        "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
+                        (uid, "deny_in_already_present")
+                    )
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_in", "msg": "Thẻ đang trong bãi"}))
                 else:
-                    db_cursor.execute("INSERT INTO active_parking (uid) VALUES (%s)", (uid,))
-                    print(f"✅ Cho phép vào: Thẻ {uid} đã đăng ký vào bãi.")
+                    db_cursor.execute(
+                        "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
+                        (uid, "scan_in")
+                    )
+                    # ✅ Cập nhật context để cho phép nhận diện biển số
+                    gate_in_context["is_rfid_valid"] = True
+                    gate_in_context["uid"] = uid
+                    print(f"✅ Đã quét thẻ thành công: Thẻ {uid}. Đang chờ nhận diện biển số...")
                     client.publish("smart_parking/command", json.dumps({"action": "allow_in"}))
             
             elif gate == "OUT":
+                if not gate_out_context.get("is_session_active", False):
+                    print(f"⚠️ Từ chối RFID: Xe chưa tiến vào vị trí cảm biến IR cổng ra.")
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_out", "msg": "Hãy tiến xe vào cổng trước"}))
+                    return
+
                 if in_parking:
-                    db_cursor.execute("DELETE FROM active_parking WHERE uid = %s", (uid,))
-                    print(f"✅ Cho phép ra: Thẻ {uid} hợp lệ, đã rời bãi.")
-                    client.publish("smart_parking/command", json.dumps({"action": "allow_out"}))
+                    license_plate_in = in_parking[0]
+                    db_cursor.execute(
+                        "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
+                        (uid, "scan_out")
+                    )
+                    # Thiết lập trạng thái chờ camera đối chiếu
+                    gate_out_context["is_rfid_valid"] = True
+                    gate_out_context["uid"] = uid
+                    gate_out_context["expected_plate"] = license_plate_in
+                    
+                    print(f"✅ Thẻ {uid} hợp lệ (Biển số đã đăng ký: {license_plate_in}). Đang chờ camera đối chiếu...")
+                    client.publish("smart_parking/command", json.dumps({"action": "allow_out", "msg": "Chờ đối chiếu biển số"}))
                 else:
                     print(f"⚠️ Từ chối ra: Thẻ {uid} KHÔNG HỢP LỆ (chưa đăng ký vào).")
-                    client.publish("smart_parking/command", json.dumps({"action": "deny_out", "msg": "thẻ ko hợp lệ"}))
+                    db_cursor.execute(
+                        "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
+                        (uid, "deny_out_not_found")
+                    )
+                    client.publish("smart_parking/command", json.dumps({"action": "deny_out", "msg": "Thẻ chưa vào bãi"}))
             else:
                 print("⚠️ Cổng không xác định, bỏ qua thẻ.")
 
         elif event == "card_removed":
-             # Lưu log thẻ bị rút ra (uid có thể null hoặc không truyền gửi, nên ta lưu chuỗi rỗng hoặc xử lý thêm tùy logic)
-             # Ở đây ESP32 đang gửi {"event":"card_removed"} không có UID, nên uid sẽ là None.
+             # Lưu log thẻ bị rút ra
              db_cursor.execute(
                 "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
                 ("UNKNOWN", event)
@@ -277,11 +376,59 @@ def on_message(client, userdata, msg):
                      "INSERT INTO gate_logs (gate_name, state) VALUES (%s, %s)",
                      (gate, state)
                  )
+                 
+                 if gate == "IN":
+                     if state == "detecting":
+                         gate_in_context["is_car_present"] = True
+                         gate_in_context["is_session_active"] = True
+                         gate_in_context["is_rfid_valid"] = False
+                         gate_in_context["is_plate_handled"] = False
+                         gate_in_context["uid"] = None
+                         
+                         db_cursor.execute("SELECT COUNT(*) FROM active_parking")
+                         count = db_cursor.fetchone()[0]
+                         if count >= 3:
+                             print(f"🚨 Bãi đỗ xe đã đầy ({count}/3)!")
+                             gate_in_context["is_parking_full"] = True
+                             db_cursor.execute(
+                                 "INSERT INTO rfid_logs (uid, event_type) VALUES (%s, %s)",
+                                 ("SYSTEM", "deny_full_in")
+                             )
+                             client.publish("smart_parking/command", json.dumps({"action": "full_parking", "msg": "Nhà xe đã hết chỗ"}))
+                         else:
+                             gate_in_context["is_parking_full"] = False
+                             print(f"🚗 Xe đã tới cổng vào. (Sức chứa: {count}/3)")
+                     elif state == "cleared":
+                         gate_in_context["is_car_present"] = False
+                         print("ℹ️ Cảm biến IR trống (giữ nguyên trạng thái chờ camera nếu đã quét thẻ).")
+                     elif state == "closed":
+                             gate_in_context["pending_entry_uid"] = None
+                             gate_in_context["pending_entry_plate"] = None
+                             gate_in_context["is_session_active"] = False
+                             gate_in_context["is_plate_handled"] = False
+                 
+                 elif gate == "OUT":
+                     if state == "detecting":
+                         gate_out_context["is_car_present"] = True
+                         gate_out_context["is_session_active"] = True
+                         gate_out_context["is_rfid_valid"] = False
+                         gate_out_context["is_plate_handled"] = False
+                         gate_out_context["uid"] = None
+                         gate_out_context["expected_plate"] = None
+                         print("🚗 Xe đã tới cổng ra.")
+                     elif state == "cleared":
+                         gate_out_context["is_car_present"] = False
+                         print("ℹ️ Cổng ra trống.")
+                     elif state == "closed":
+                         # Phiên đã kết thúc (dữ liệu đã được xóa lúc mở cổng)
+                         print(f"✅ Xe đã rời cổng OUT. Kết thúc phiên.")
+                         gate_out_context["is_session_active"] = False
+                         gate_out_context["is_rfid_valid"] = False
+
                  state_str = "Vừa tới cổng" if state == "detecting" else "Vừa rời cổng"
                  print(f"💾 Đã lưu vào DB: Cổng {gate} -> {state_str}")
         
         elif event == "license_plate_detected":
-             # Handle license plate detection event
              handle_license_plate_message(data, client)
 
     except json.JSONDecodeError:

@@ -1,5 +1,5 @@
 export type SlotStatus = 'occupied' | 'available'
-export type GateFlowStatus = 'idle' | 'vehicle_detected' | 'waiting_rfid' | 'gate_open' | 'gate_closed'
+export type GateFlowStatus = 'idle' | 'vehicle_detected' | 'waiting_rfid' | 'waiting_confirmation' | 'gate_open' | 'gate_closed'
 export type VehicleType = 'car' | 'motorbike'
 export type GateType = 'entry' | 'exit'
 
@@ -21,7 +21,13 @@ export interface Vehicle {
 export interface GateState {
   gate: GateType
   status: GateFlowStatus
+  isOpen: boolean
   currentPlate?: string
+  pendingPlate?: string
+  expectedPlate?: string | null
+  entryTime?: string | null
+  durationMinutes?: number | null
+  totalFee?: number | null
   message: string
 }
 
