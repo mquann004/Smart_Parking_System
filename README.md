@@ -1,7 +1,4 @@
 
-<div align="center">
-  <img src="assets/hero.png" alt="Smart Parking System Hero" width="800">
-
   # 🅿️ Smart Parking System
   ### AI-Powered License Plate Recognition & IoT Integration
 
