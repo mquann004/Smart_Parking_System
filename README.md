@@ -144,5 +144,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 <div align="center">
-  Developed with ❤️ by Minh Quan Tran
+  Developed with ❤️ by Minh Quan Tran & Thanh Dat Nguyen
 </div>
