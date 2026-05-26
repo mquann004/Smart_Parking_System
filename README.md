@@ -139,7 +139,7 @@ npm run dev
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-**Author**: Minh Quan Tran  
+**Author**: Minh Quan Tran & Thanh Dat Nguyen
 **Project Link**: [https://github.com/mquann004/Smart_Parking_System](https://github.com/mquann004/Smart_Parking_System)
 
 ---
